@@ -92,7 +92,7 @@
     font-family: 'conthrax-semibold';
     font-weight: 600;
     font-style: normal;
-    src: url('./conthrax-semibold.otf');
+    src: url('/conthrax-semibold.otf');
 }
 
 body {
