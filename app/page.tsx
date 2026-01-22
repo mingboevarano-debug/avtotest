@@ -59,6 +59,9 @@ export default function Home() {
             <button className="back-variant-question" style={{ display: 'none' }}>Orqaga</button>
             <button className="back-imtihon-question" style={{ display: 'none' }}>Orqaga</button>
 
+            <Script src="/scripts/image-debug.js" strategy="beforeInteractive" />
+            <Script src="/scripts/image-error-handler.js" strategy="beforeInteractive" />
+            <Script src="/scripts/image-debug-panel.js" strategy="beforeInteractive" />
             <Script src="/scripts/index-obfuscated.js" strategy="lazyOnload" />
             <Script src="/scripts/user.js" strategy="lazyOnload" />
             <Script id="home-logic" strategy="lazyOnload">

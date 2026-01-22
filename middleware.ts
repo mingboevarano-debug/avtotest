@@ -9,10 +9,16 @@ export function middleware(request: NextRequest) {
     if (pathname.match(/^\/Images\//i)) {
         const normalizedPath = pathname.replace(/^\/Images\//i, '/images/');
         if (pathname !== normalizedPath) {
+            console.log(`[Middleware] Redirecting ${pathname} to ${normalizedPath} (case fix)`);
             const url = request.nextUrl.clone();
             url.pathname = normalizedPath;
             return NextResponse.redirect(url, 301); // Permanent redirect
         }
+    }
+    
+    // Log image requests for debugging
+    if (pathname.startsWith('/images/')) {
+        console.log(`[Middleware] Image request: ${pathname}`);
     }
     
     return NextResponse.next();
