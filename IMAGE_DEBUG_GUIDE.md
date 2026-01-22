@@ -2,7 +2,12 @@
 
 ## What I Added
 
-I've added comprehensive debugging tools to help identify why some images aren't loading on Vercel.
+I've added comprehensive debugging tools and **Vercel fixes** for "undefined" / invalid image src.
+
+### Vercel fix (in image-debug.js)
+- **Blocks invalid src**: `undefined`, `"undefined"`, empty, or paths containing `"undefined"` (fixes "some pictures undefined" on Vercel).
+- **Normalizes paths**: Ensures `/images/` (lowercase), leading slash; `/Images/` → `/images/`.
+- **Hides bad imgs**: Invalid src → img hidden, not requested; console: `🛑 Blocked invalid image src (Vercel fix): ...`
 
 ### Debug Scripts Added:
 

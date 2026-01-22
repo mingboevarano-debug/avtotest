@@ -1,7 +1,8 @@
 /**
- * Image Debug Script
- * This script monitors all image loading attempts and logs them to console
- * Add this BEFORE your main script to see what's happening with images
+ * Image Debug Script + Vercel Fix
+ * - Monitors all image loading attempts and logs to console
+ * - Blocks "undefined" / invalid image src (fixes Vercel vs localhost)
+ * - Normalizes paths: /images/ lowercase, leading slash
  */
 
 console.log('🔍 Image Debug Script Loaded');
@@ -10,6 +11,32 @@ console.log('🔍 Image Debug Script Loaded');
 const imageLoadAttempts = [];
 const imageLoadSuccess = [];
 const imageLoadFailures = [];
+
+/** Returns false if src is undefined, "undefined", empty, or contains "undefined" */
+function isValidImageSrc(src) {
+    if (src == null) return false;
+    const s = String(src).trim();
+    if (s === '' || s === 'undefined') return false;
+    if (s.toLowerCase().includes('undefined')) return false;
+    return true;
+}
+
+/** Normalize path: /images/ lowercase, leading slash. Full URLs unchanged. Returns null if invalid. */
+function normalizeImageSrc(src) {
+    if (!isValidImageSrc(src)) return null;
+    let s = String(src).trim();
+    if (/^\w+:\/\//.test(s)) return s; // keep full URLs
+    if (!s.startsWith('/')) s = '/' + s;
+    s = s.replace(/^\/Images\//i, '/images/');
+    return s;
+}
+
+/** Hide img and log when we block invalid src */
+function blockInvalidSrc(img, raw) {
+    img.style.display = 'none';
+    img.setAttribute('data-image-fix-blocked', 'true');
+    console.warn('🛑 Blocked invalid image src (Vercel fix):', raw);
+}
 
 // Override Image constructor to intercept image creation
 const OriginalImage = window.Image;
@@ -31,6 +58,10 @@ document.createElement = function(tagName, ...args) {
 
 // Function to track an image element
 function trackImage(img) {
+    if (img.nodeType !== 1 || !img.tagName || img.tagName.toLowerCase() !== 'img') return;
+    if (img.getAttribute && img.getAttribute('data-image-tracked') === 'true') return;
+    if (img.setAttribute) img.setAttribute('data-image-tracked', 'true');
+
     const imageInfo = {
         element: img,
         src: null,
@@ -40,56 +71,73 @@ function trackImage(img) {
         timestamp: Date.now()
     };
 
-    // Override src setter to track all src changes
+    // Fix already-set src (e.g. from innerHTML) before we override
+    const existing = (typeof img.src !== 'undefined' ? img.src : null) || img.getAttribute('src');
+    if (existing && !isValidImageSrc(existing)) {
+        img.removeAttribute('src');
+        blockInvalidSrc(img, existing);
+    }
+
+    // Override src setter to track and fix; use native setAttribute to actually load
+    const nativeSetAttribute = HTMLImageElement.prototype.setAttribute;
     let currentSrc = '';
     Object.defineProperty(img, 'src', {
         get: function() {
             return currentSrc;
         },
         set: function(newSrc) {
-            currentSrc = newSrc;
-            imageInfo.src = newSrc;
-            imageInfo.attemptedSrc.push(newSrc);
-            
-            console.log('📸 Image src set:', newSrc);
+            const normalized = normalizeImageSrc(newSrc);
+            if (normalized === null) {
+                blockInvalidSrc(img, newSrc);
+                return;
+            }
+            currentSrc = normalized;
+            imageInfo.src = normalized;
+            imageInfo.attemptedSrc.push(normalized);
+
+            console.log('📸 Image src set:', normalized);
             imageLoadAttempts.push({
-                path: newSrc,
+                path: normalized,
                 timestamp: Date.now(),
                 element: img
             });
 
-            // Set up load/error handlers
-            img.addEventListener('load', function() {
+            img.addEventListener('load', function onLoad() {
+                img.removeEventListener('load', onLoad);
                 imageInfo.status = 'success';
                 imageLoadSuccess.push({
-                    path: newSrc,
+                    path: normalized,
                     timestamp: Date.now(),
                     element: img
                 });
-                console.log('✅ Image loaded successfully:', newSrc);
+                console.log('✅ Image loaded successfully:', normalized);
             });
 
-            img.addEventListener('error', function(error) {
+            img.addEventListener('error', function onError(error) {
+                img.removeEventListener('error', onError);
                 imageInfo.status = 'error';
                 imageInfo.error = error;
                 imageLoadFailures.push({
-                    path: newSrc,
+                    path: normalized,
                     timestamp: Date.now(),
                     element: img,
                     error: error
                 });
-                console.error('❌ Image failed to load:', newSrc);
-                console.error('   Full URL:', img.src);
+                console.error('❌ Image failed to load:', normalized);
+                console.error('   Full URL:', img.src || normalized);
                 console.error('   Error details:', error);
             });
+
+            // Actually load the image (bypass our override)
+            nativeSetAttribute.call(img, 'src', normalized);
         }
     });
 
-    // Also track if src is set via setAttribute
     const originalSetAttribute = img.setAttribute.bind(img);
     img.setAttribute = function(name, value) {
         if (name === 'src') {
-            img.src = value; // This will trigger our setter
+            img.src = value;
+            return; // we already load via nativeSetAttribute in setter, or we blocked
         }
         return originalSetAttribute(name, value);
     };
