@@ -19,6 +19,7 @@ export default function RootLayout({
             <body>
                 {children}
 
+                <Script src="/scripts/disable-inspect.js" strategy="beforeInteractive" />
                 {/* Firebase SDKs */}
                 <Script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js" strategy="beforeInteractive" />
                 <Script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js" strategy="beforeInteractive" />

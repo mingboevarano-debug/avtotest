@@ -1,32 +1,31 @@
 (function () {
-  'use strict';
+    "use strict";
 
-  function block(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
+    // Disable right-click context menu
+    document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+    });
 
-  document.addEventListener('contextmenu', block);
-  document.addEventListener('copy', block);
-  document.addEventListener('cut', block);
-
-  document.addEventListener('keydown', function (e) {
-    var key = e.key || e.keyCode;
-    var ctrl = e.ctrlKey || e.metaKey;
-    if (key === 'F12' || e.keyCode === 123) return block(e);
-    if (ctrl && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) return block(e);
-    if (ctrl && (key === 'u' || key === 'U' || e.keyCode === 85)) return block(e);
-    if (ctrl && (key === 's' || key === 'S' || e.keyCode === 83)) return block(e);
-    if (e.shiftKey && (key === 'F12' || e.keyCode === 123)) return block(e);
-    if (e.altKey && (key === 'F12' || e.keyCode === 123)) return block(e);
-    if (e.altKey && (key === 'F11' || e.keyCode === 122)) return block(e);
-  });
-
-  try {
-    var style = document.createElement('style');
-    style.textContent = 'body, body * { -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; } input, textarea, [contenteditable="true"] { -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; user-select: text !important; }';
-    document.head.appendChild(style);
-  } catch (err) {}
-
+    // Disable DevTools / inspect shortcuts
+    document.addEventListener("keydown", function (e) {
+        // F12
+        if (e.key === "F12") {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I (DevTools), Ctrl+Shift+J (Console), Ctrl+Shift+C (Inspect), Ctrl+U (View source)
+        if (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.key === "u") {
+            e.preventDefault();
+            return false;
+        }
+        // Cmd+Option+I, Cmd+Option+J, Cmd+Option+C (Mac)
+        if (e.metaKey && e.altKey && ["i", "j", "I", "J", "c", "C"].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+    });
 })();
