@@ -74,6 +74,8 @@ export default function Home() {
                 document.querySelector('.main-items').style.display = 'none';
                 document.querySelector('.chapters').style.display = 'flex';
                 document.querySelector('.back-button').style.display = 'none';
+                const questionOraliq = document.querySelector('#questionOraliq');
+                if (questionOraliq) questionOraliq.style.display = 'none';
                 document.querySelectorAll('.chapter-button').forEach(button => {
                     button.style.display = 'block';
                 });
@@ -90,6 +92,14 @@ export default function Home() {
               document.querySelector("#content").style.marginTop = '30px';
             });
           }
+          document.addEventListener('click', function (event) {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('.shiny-cta')) {
+              const question = document.querySelector('#question');
+              if (question) question.style.display = 'none';
+            }
+          });
           document.querySelectorAll(".chapter-button").forEach(button => {
               button.addEventListener("click", function () {
                   document.querySelector('.chapters').style.display = 'none';

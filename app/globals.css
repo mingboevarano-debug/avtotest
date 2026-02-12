@@ -427,6 +427,11 @@ body {
     height: auto;
 }
 
+.variantImage {
+    width: 90% !important;
+    max-width: 90% !important;
+}
+
 .answer {
     margin: 10px 0;
     border: 1px solid #ccc;
@@ -595,6 +600,33 @@ body {
 
     .variant {
         z-index: 999;
+    }
+}
+
+@media (min-width: 1400px) and (max-width: 2800px) {
+    #content {
+        display: flex !important;
+    }
+
+    #test-navigation {
+        position: absolute;
+        bottom: -300px;
+    }
+
+    #answers {
+        position: absolute;
+        width: 40%;
+        right: 0;
+        margin-top: 50px;
+    }
+
+    .question img {
+        max-width: 40%;
+    }
+
+    img {
+        width: 40%;
+        height: auto;
     }
 }
 

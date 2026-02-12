@@ -1077,7 +1077,7 @@ oraliq.addEventListener("click", () => {
                 });
             }
 
-            elementToRemove.style.display = "none";
+            elementToRemove.style.setProperty('display', 'none', 'important');
             if (secondELementToRemoveTImer) {
                 console.log('Content:', secondELementToRemoveTImer.innerHTML);
                 secondELementToRemoveTImer.remove();
