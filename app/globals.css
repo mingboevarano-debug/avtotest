@@ -613,6 +613,11 @@ body {
         bottom: -300px;
     }
 
+    body.oraliq-or-testlar-mode #test-navigation {
+        position: absolute;
+        bottom: -200px;
+    }
+
     #answers {
         position: absolute;
         width: 40%;
@@ -645,6 +650,14 @@ body {
     align-items: center;
     justify-content: center;
     gap: 15px;
+}
+
+body.variant-mode .nav-container {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    width: 100%;
 }
 
 .nav-container .nav-box {

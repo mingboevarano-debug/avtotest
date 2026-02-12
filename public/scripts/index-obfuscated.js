@@ -247,7 +247,9 @@ function filterQuestionsByTopic(topicId) {
 // Function to display the current question and answers
 // Function to display the current question and answers
 function displayQuestion() {
-document.querySelector("#test-navigation").style.marginTop ="100px"
+    if (!document.body.classList.contains('variant-mode')) {
+        document.querySelector("#test-navigation").style.marginTop = "100px";
+    }
 document.querySelector("#question").style.margin="0";
 content.style.display = "block";
 
@@ -484,6 +486,7 @@ content.style.display = "block";
 
     variantGotoHome.style.display = "block"
     variantGotoHome.addEventListener(("click"), () => {
+        document.body.classList.remove('variant-mode');
         mainitems.style.display = "flex";
         document.querySelector(".button-container-group").remove();
         variantGotoHome.style.display = "none";
@@ -541,6 +544,9 @@ content.style.display = "block";
         button.textContent = `Variant ${index + 1}`;
         button.classList.add('group-button');
         button.addEventListener('click', () => {
+            document.body.classList.add('variant-mode');
+            const testNav = document.querySelector("#test-navigation");
+            if (testNav) testNav.style.marginTop = "";
             currentQuestionIndex = 0;
             displayGroupQuestions(group);
             document.querySelector(".button-container-group").style.display = "none";
@@ -1046,6 +1052,7 @@ oraliq.addEventListener("click", () => {
 
 
         content.style.display = "block";
+        document.body.classList.add('oraliq-or-testlar-mode');
 
         // Filter questions by selected chapter
         const questionsInChapter = Questions.filter(question => {
@@ -1054,6 +1061,7 @@ oraliq.addEventListener("click", () => {
         });
 
         backOraliqQuestion.addEventListener("click", () => {
+            document.body.classList.remove('oraliq-or-testlar-mode');
             backOraliqQuestion.style.display = "none";
             oraliqChapterBack.style.display = "block";
             console.log("test");
@@ -1434,6 +1442,7 @@ test.addEventListener("click", () => {
     let back_test_question = document.querySelector(".back-test-question");
     back_test_question.style.display = "block";
     back_test_question.addEventListener("click", () => {
+        document.body.classList.remove('oraliq-or-testlar-mode');
         // Reset all test-related variables
         totalQuestionsAnswered = 0;
         totalCorrectAnswers = 0;
@@ -1502,6 +1511,7 @@ test.addEventListener("click", () => {
 
     // Function to start the test
     function startTest(numberOfQuestions, withTimer) {
+        document.body.classList.add('oraliq-or-testlar-mode');
         // Randomly select questions from all chapters
         const randomQuestions = getRandomQuestions(Questions, numberOfQuestions);
         content.style.display = "block";
