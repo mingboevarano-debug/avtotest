@@ -8,7 +8,7 @@
 console.log('🔍 Image Debug Script Loaded');
 
 // Cloudinary base URL - images fetched from here instead of local /images/
-const CLOUDINARY_BASE = 'https://res.cloudinary.com/da51nlisj/image/upload/v1769705101/ml_default/';
+var CLOUDINARY_BASE = 'https://res.cloudinary.com/da51nlisj/image/upload/v1769705101/ml_default/';
 
 // Track all image loading attempts
 const imageLoadAttempts = [];

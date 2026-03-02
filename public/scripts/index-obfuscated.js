@@ -5,27 +5,75 @@ console.log(Answers);
 console.log(Questions);
 console.log(topic);
 
-// Image URL map from upload-results.json (filename -> Cloudinary url)
-let imageUrlMap = {};
-fetch('/upload-results.json').then(function(r) { return r.json(); }).then(function(data) {
-    if (data && data.images && Array.isArray(data.images)) {
-        data.images.forEach(function(img) {
-            if (img.filename && img.url) imageUrlMap[img.filename] = img.url;
-        });
-        console.log('Loaded', Object.keys(imageUrlMap).length, 'image URLs from upload-results.json');
-    }
-}).catch(function() { /* fallback to base URL */ });
+// Image URL maps: Cloudinary (primary) and Cloudflare R2 (fallback)
+let cloudinaryUrlMap = {};
+let cloudflareUrlMap = {};
+let useCloudflare = false;
 
-const LOGO_URL = 'https://res.cloudinary.com/da51nlisj/image/upload/v1770655033/logo_e9wnfh.png';
+var LOGO_URL = 'https://res.cloudinary.com/da51nlisj/image/upload/v1770655033/logo_e9wnfh.png';
+var CLOUDFLARE_LOGO_URL = 'https://pub-a2e91bf46911486c8024e25bc855bb42.r2.dev/logo.png';
+var CLOUDFLARE_BASE = 'https://pub-a2e91bf46911486c8024e25bc855bb42.r2.dev/';
+var CLOUDINARY_BASE = 'https://res.cloudinary.com/da51nlisj/image/upload/v1769705101/ml_default/';
+
+Promise.all([
+    fetch('/upload-results.json').then(function(r) { return r.json(); }).catch(function() { return null; }),
+    fetch('/image_urls.json').then(function(r) { return r.json(); }).catch(function() { return null; })
+]).then(function(results) {
+    var cloudinaryData = results[0];
+    var cloudflareData = results[1];
+
+    if (cloudinaryData && cloudinaryData.images && Array.isArray(cloudinaryData.images)) {
+        cloudinaryData.images.forEach(function(img) {
+            if (img.filename && img.url) cloudinaryUrlMap[img.filename] = img.url;
+        });
+        console.log('Loaded', Object.keys(cloudinaryUrlMap).length, 'Cloudinary image URLs');
+    }
+
+    if (cloudflareData && Array.isArray(cloudflareData)) {
+        cloudflareData.forEach(function(img) {
+            if (img.fileName && img.url) cloudflareUrlMap[img.fileName] = img.url;
+        });
+        console.log('Loaded', Object.keys(cloudflareUrlMap).length, 'Cloudflare image URLs');
+    }
+
+    var testUrl = Object.values(cloudinaryUrlMap)[0];
+    if (!testUrl) {
+        console.warn('No Cloudinary URLs loaded, switching to Cloudflare');
+        useCloudflare = true;
+        return;
+    }
+
+    return fetch(testUrl, { method: 'HEAD' })
+        .then(function(response) {
+            if (response.ok) {
+                console.log('Cloudinary is available, using Cloudinary URLs');
+                useCloudflare = false;
+            } else {
+                console.warn('Cloudinary returned status ' + response.status + ', switching to Cloudflare');
+                useCloudflare = true;
+            }
+        })
+        .catch(function(err) {
+            console.warn('Cloudinary is unavailable: ' + (err.message || err) + ', switching to Cloudflare');
+            useCloudflare = true;
+        });
+});
+
 function getCloudinaryImageUrl(path) {
-    const base = 'https://res.cloudinary.com/da51nlisj/image/upload/v1769705101/ml_default/';
-    if (!path || typeof path !== 'string') return imageUrlMap['logo.png'] || LOGO_URL;
-    const s = String(path).trim();
+    if (!path || typeof path !== 'string') {
+        if (useCloudflare) return cloudflareUrlMap['logo.png'] || CLOUDFLARE_LOGO_URL;
+        return cloudinaryUrlMap['logo.png'] || LOGO_URL;
+    }
+    var s = String(path).trim();
     if (/^https?:\/\//i.test(s) || /^data:/i.test(s)) return s;
-    const parts = s.split(/[/\\]/);
-    const filename = parts[parts.length - 1] || s;
-    const f = filename && filename !== '.' && filename !== '..' ? filename : 'logo.png';
-    return imageUrlMap[f] || (f === 'logo.png' ? LOGO_URL : base + f);
+    var parts = s.split(/[/\\]/);
+    var filename = parts[parts.length - 1] || s;
+    var f = filename && filename !== '.' && filename !== '..' ? filename : 'logo.png';
+
+    if (useCloudflare) {
+        return cloudflareUrlMap[f] || (f === 'logo.png' ? CLOUDFLARE_LOGO_URL : CLOUDFLARE_BASE + f);
+    }
+    return cloudinaryUrlMap[f] || (f === 'logo.png' ? LOGO_URL : CLOUDINARY_BASE + f);
 }
 
 
