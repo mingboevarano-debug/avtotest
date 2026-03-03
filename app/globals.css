@@ -3,7 +3,31 @@
     padding: 0;
 
 }
+*::-webkit-scrollbar{
+    display: none;
+}
 
+*::-webkit-scrollbar-button{
+    display: none;
+}
+*::-webkit-scrollbar-corner{
+    display: none;
+}
+*::-webkit-scrollbar-thumb{
+    display: none;
+}
+*::-webkit-scrollbar-track{
+    display: none;
+}
+.imtihon-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+    display: none;
+}
 .modal {
     display: none;
     position: fixed;
@@ -14,44 +38,7 @@
     background-color: rgb(106, 31, 228);
     z-index: 1000;
     font-size: 45px;
-    font-family: "conthrax-semibold";
-}
-
-.imtihon-container {
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    display: none;
-}
-
-.imtihon-button {
-    position: absolute;
-    right: 0px;
-    top: 50px;
-    background-color: red;
-    color: white;
-    padding: 7px 9px;
-    border-radius: 10px;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.back-imtihon-question {
-    width: 240px !important;
-    position: absolute;
-    top: 10px;
-    left: 5%;
-    backdrop-filter: blur(4px);
-    background: hsla(0, 0%, 100%, .1);
-    border-radius: 11px;
-    border: 1px solid hsla(0, 0%, 100%, .1);
-    color: #fff;
-    padding: 10px 20px;
-    margin-top: 40px;
-    font-family: "conthrax-semibold";
-    cursor: pointer;
-    display: none;
+    font-family: var(--font-conthrax), sans-serif;
 }
 
 .modal-content {
@@ -59,7 +46,7 @@
     padding: 20px;
     border-radius: 5px;
     width: 70%;
-
+    
     text-align: center;
 }
 
@@ -73,28 +60,20 @@
     cursor: pointer;
 }
 
-.imtihon-item {
+.imtihon-item{
     width: 240px;
     height: 240px;
     background: teal;
     border-radius: 20px;
     font-size: 44px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     display: flex;
     align-items: center;
     cursor: pointer;
     justify-content: center;
     color: #fff;
-
+    
 }
-
-@font-face {
-    font-family: 'conthrax-semibold';
-    font-weight: 600;
-    font-style: normal;
-    src: url('/conthrax-semibold.otf');
-}
-
 body {
     font-family: Arial, sans-serif;
     margin: 20px;
@@ -108,33 +87,42 @@ body {
 #content {
     width: 90%;
     color: #fff;
-    font-family: "conthrax-semibold";
-    /* height: 80vh; */
+    font-family: var(--font-conthrax), sans-serif;
+    height: 80vh;
 }
 
 .question {
+    margin-top: -70px;
     width: 100%;
     height: auto;
-
+    display: grid;
+    position: relative;
 
 }
 
 .question div {
     width: 100%;
-    margin-bottom: 46px;
-    font-size: 14px;
+    height: 80px;
+    font-size: 20px;
 }
-
+::selection{
+    background: none;
+    
+}
 .question img {
-
-    height: 420px !important;
-    max-height: 420px !important;
+    width: 50%;
+    height: 550px !important;
+    max-height: 550px !important;
     border-radius: 10px;
     border: 2px solid white;
     top: 100px !important;
     right: 0;
+    margin-left: 600px;
 }
-
+.question .variantImage{
+    height: 450px !important;
+    max-height: 450px !important;
+}
 #questionOraliq img {
     top: unset;
 
@@ -152,6 +140,11 @@ body {
     display: none;
 }
 
+#answers {
+    position: absolute;
+    top: 70px;
+
+}
 
 .question .answer {
     width: 50%;
@@ -160,14 +153,17 @@ body {
 
 #content {
     position: relative;
+    display: none ;
 }
 
 .answer:hover {
     background: #272710;
 }
-
+.answer:focus{
+    background: gray;
+}
 #answers {
-    width: 100%;
+    width: 40%;
 
 }
 
@@ -175,8 +171,8 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    font-size: 12px;
-    font-family: "conthrax-semibold";
+    font-size: 22px;
+    font-family: var(--font-conthrax), sans-serif;
     color: #fff;
 }
 
@@ -218,8 +214,10 @@ body {
 }
 
 .topics {
+    z-index: 9999;
     display: flex;
     flex-wrap: wrap;
+    height: 20px;
     margin-top: 80px;
     align-items: center;
     justify-content: center;
@@ -241,15 +239,14 @@ body {
     color: #fff;
     position: absolute;
     top: 80px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     font-size: 33px;
     left: 0;
     text-align: center;
     width: 100%;
     margin: auto;
     margin-top: 30px;
-    top: -300px;
-    display: none;
+    top: -159px;
 }
 
 .chapter-button,
@@ -262,7 +259,7 @@ body {
     border: 1px solid;
     border-image: linear-gradient(89.96deg, hsla(0, 0%, 100%, .05) .03%, hsla(0, 0%, 100%, .008) 49.67%, hsla(0, 0%, 100%, .05) 99.96%);
     border-image-slice: 1;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     color: #fff;
 }
@@ -285,7 +282,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
 }
@@ -302,12 +299,13 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
 }
 
-.back-oraliq-chapter {
+.back-oraliq-chapter ,
+.back-imtihon-question{
     width: 240px !important;
     position: absolute;
     top: 10px;
@@ -319,7 +317,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
 }
@@ -336,7 +334,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
 }
@@ -352,7 +350,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
 
     width: 200px;
@@ -378,7 +376,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
     width: 200px;
@@ -396,7 +394,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
     width: 200px;
@@ -425,11 +423,6 @@ body {
 .question img {
     max-width: 100%;
     height: auto;
-}
-
-.variantImage {
-    width: 90% !important;
-    max-width: 90% !important;
 }
 
 .answer {
@@ -476,8 +469,7 @@ body {
 }
 
 .result {
-    margin-top: 20px;
-    font-weight: bold;
+    
 }
 
 .navigation {
@@ -506,7 +498,7 @@ body {
     font-size: 33px;
     align-items: center;
     justify-content: center;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
 }
 
@@ -527,13 +519,12 @@ body {
     border-radius: 10px;
     padding: 16px 25px;
     color: #fff;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
 }
 
 #test-navigation {
     display: flex;
     gap: 10px;
-    margin-top: 100px !important;
     flex-wrap: wrap;
     bottom: 0;
     align-items: center;
@@ -565,7 +556,7 @@ body {
     color: #fff;
     padding: 10px 20px;
     margin-top: 40px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     cursor: pointer;
     display: none;
     width: 200px;
@@ -574,69 +565,6 @@ body {
 .test-box.correct {
     background-color: green !important;
     color: white;
-}
-
-@media(max-width:470px) {
-    .language-switcher {
-        margin-top: 90px !important;
-    }
-
-    .toggleModeButton {
-        margin-top: 80px;
-        right: 0 !important;
-        left: 5%;
-    }
-
-    #Oraliqchapters {
-        margin-top: 50px;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .timer {
-        top: 220px !important;
-    }
-
-    .variant {
-        z-index: 999;
-    }
-}
-
-@media (min-width: 1400px) and (max-width: 2800px) {
-    #content {
-        display: flex !important;
-    }
-
-    #test-navigation {
-        position: absolute;
-        bottom: -300px;
-    }
-
-    body.oraliq-or-testlar-mode #test-navigation {
-        position: absolute;
-        bottom: -200px;
-    }
-
-    #answers {
-        position: absolute;
-        width: 40%;
-        right: 0;
-        margin-top: 50px;
-    }
-
-    .question img {
-        max-width: 40%;
-    }
-
-    img {
-        width: 40%;
-        height: auto;
-    }
-}
-
-.language-switcher {
-    margin-top: 60px;
 }
 
 .correct-answer {
@@ -650,14 +578,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: 15px;
-}
-
-body.variant-mode .nav-container {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    width: 100%;
+    margin-top: -60px;
+    z-index: 9999;
 }
 
 .nav-container .nav-box {
@@ -666,14 +588,14 @@ body.variant-mode .nav-container {
     border-radius: 5px;
     cursor: pointer;
     color: #fff;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
 }
 
 .timer {
     position: absolute;
-    top: 170px;
+    top: 120px;
     font-size: 30px;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     color: #fff;
 }
 
@@ -682,7 +604,7 @@ body.variant-mode .nav-container {
     display: none !important;
     border: 1px solid lightblue;
     color: lightblue;
-    font-family: "conthrax-semibold";
+    font-family: "CONTHRAX-SEMIBOLD";
     padding: 10px 20px;
     margin-left: 15px;
     cursor: pointer;
@@ -697,14 +619,14 @@ body.variant-mode .nav-container {
     gap: 10px;
     justify-content: center;
     align-items: center;
-    top: 180px;
+    top: 100px;
     flex-wrap: wrap;
 }
 
 .group-button {
     background: none;
     color: lightblue;
-    font-family: "conthrax-semibold";
+    font-family: "CONTHRAX-SEMIBOLD";
     padding: 10px;
     border: 1px solid lightblue;
     cursor: pointer;
@@ -733,7 +655,7 @@ body.variant-mode .nav-container {
     padding: 10px 20px;
     margin: 30px 2px;
     cursor: pointer;
-    font-family: "conthrax-semibold";
+    font-family: "CONTHRAX-SEMIBOLD";
 }
 
 :root {
@@ -778,7 +700,7 @@ body.variant-mode .nav-container {
     cursor: pointer;
     outline-offset: 4px;
     padding: 1.25rem 2.5rem;
-    font-family: "conthrax-semibold";
+    font-family: var(--font-conthrax), sans-serif;
     margin-top: 100px;
     font-size: 1.125rem;
     line-height: 1.2;
@@ -876,6 +798,17 @@ body.variant-mode .nav-container {
         transition: opacity var(--transition);
         animation: calc(var(--duration) * 1.5) breathe linear infinite;
     }
+}
+
+.imtihon-button {
+    position: absolute;
+    right: 30px;
+    top: 40px;
+    background-color: red;
+    color: white;
+    padding: 20px 15px;
+    border-radius: 10px;
+    cursor: pointer;
 }
 
 .shiny-cta:is(:hover, :focus-visible) {

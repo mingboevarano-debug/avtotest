@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import Script from "next/script";
+
+const conthrax = localFont({
+    src: "../public/conthrax-semibold.otf",
+    variable: "--font-conthrax",
+});
 
 export const metadata: Metadata = {
     title: "Document",
@@ -13,7 +19,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" className={conthrax.variable}>
             <head>
             </head>
             <body>
