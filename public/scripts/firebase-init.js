@@ -16,6 +16,10 @@ if (!firebase.apps.length) {
 
 // Initialize services
 const auth = firebase.auth();
+// Persist auth for 2 months - user stays logged in across browser restarts
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(err) {
+  console.warn('Auth persistence failed:', err);
+});
 const db = firebase.firestore();
 let realtimeDb;
 

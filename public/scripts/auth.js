@@ -18,7 +18,7 @@ function setCookie(name, value, userStatus) {
         if (userStatus && userStatus.toLowerCase() === "temporary") {
             expires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
         } else {
-            expires = new Date(Date.now() + 24 * 60 * 60 * 30000); // 1 day
+            expires = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 2 months (users created by super admin)
         }
 
         const cookieString = `${name}=${encodeURIComponent(value)}; Path=/; Expires=${expires.toUTCString()}; SameSite=Lax`;
