@@ -10,6 +10,9 @@ function getCookie(name) {
 function deleteCookie(name) {
   document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0`;
+  if (name === 'user') {
+    try { localStorage.removeItem('avtotest_user'); } catch (e) {}
+  }
 }
 
 /** Clear all user data: cookies, localStorage, sessionStorage - used when admin deletes user */
@@ -29,11 +32,28 @@ function clearAllUserData() {
   }
 }
 
-// 1. Check login state
-const userCookie = getCookie('user');
+// 1. Check login state (cookie first, then localStorage for forsale/completed persistence)
 let userData;
 try {
-  userData = userCookie ? JSON.parse(userCookie) : null;
+  const userCookie = getCookie('user');
+  if (userCookie) {
+    userData = JSON.parse(userCookie);
+  } else {
+    // Cookie may be cleared on PC restart - try localStorage (saved at login for 2 months)
+    const stored = localStorage.getItem('avtotest_user');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.expiresAt && parsed.expiresAt > Date.now() && parsed.data) {
+        userData = parsed.data;
+        // Restore cookie so next load works from cookie
+        document.cookie = 'user=' + encodeURIComponent(JSON.stringify(userData)) +
+          '; Path=/; Expires=' + new Date(parsed.expiresAt).toUTCString() + '; SameSite=Lax';
+      } else {
+        localStorage.removeItem('avtotest_user');
+      }
+    }
+  }
+  if (!userData) userData = null;
   // Restrict UI by status
   // Permanent users should only see ".item.testlar" on the home page.
   if (userData && userData.status === 'permanent') {

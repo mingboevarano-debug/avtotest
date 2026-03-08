@@ -115,7 +115,8 @@ if (loginForm && errorElement) {
                 return;
             }
 
-            // Firebase login — check email/password first
+            // Firebase login — ensure LOCAL persistence so login survives PC restart
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             const userCredential = await auth.signInWithEmailAndPassword(email, password);
             const userId = userCredential.user.uid;
 
@@ -166,6 +167,7 @@ if (loginForm && errorElement) {
             if (status === 'expired') {
                 await auth.signOut();
                 deleteCookie('user');
+                try { localStorage.removeItem('avtotest_user'); } catch (e) {}
                 throw new Error('Your account has expired');
             }
 
@@ -177,6 +179,18 @@ if (loginForm && errorElement) {
             };
             const userJson = JSON.stringify(userData);
             setCookie('user', userJson, status);
+            // Also store in localStorage for persistence (cookies can be cleared on PC restart)
+            try {
+                const expiresAt = status && status.toLowerCase() === 'temporary'
+                    ? Date.now() + 30 * 60 * 1000
+                    : Date.now() + 60 * 24 * 60 * 60 * 1000;
+                localStorage.setItem('avtotest_user', JSON.stringify({
+                    data: userData,
+                    expiresAt: expiresAt
+                }));
+            } catch (e) {
+                console.warn('localStorage set failed:', e);
+            }
 
             window.location.href = '/';
         } catch (error) {
