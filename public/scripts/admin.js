@@ -1,18 +1,37 @@
 // scripts/admin.js
-// Cookie utility functions
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
+  if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift().trim());
+  return null;
+}
+
+function getAdminSession(key) {
+  let val = getCookie(key);
+  if (val) return val;
+  try {
+    const stored = localStorage.getItem('avtotest_' + key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.expiresAt > Date.now()) {
+        val = parsed.value;
+        const expiresMs = 60 * 24 * 60 * 60 * 1000;
+        document.cookie = key + '=' + encodeURIComponent(val) + '; Path=/; Expires=' + new Date(Date.now() + expiresMs).toUTCString() + '; SameSite=Lax';
+        return val;
+      }
+      localStorage.removeItem('avtotest_' + key);
+    }
+  } catch (e) {}
   return null;
 }
 
 function deleteCookie(name) {
-  document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  if (name === 'isAdmin') try { localStorage.removeItem('avtotest_isAdmin'); } catch (e) {}
 }
 
-// 1. Admin check
-if (getCookie('isAdmin') !== 'true') {
+// 1. Admin check (cookie + localStorage)
+if (getAdminSession('isAdmin') !== 'true') {
   window.location.href = '/login';
 } else {
   // 2. Create new user

@@ -37,7 +37,20 @@ function deleteCookie(name) {
     document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     if (name === 'user') {
         try { localStorage.removeItem('avtotest_user'); } catch (e) {}
+    } else if (name === 'isSuperAdmin' || name === 'isAdmin') {
+        try { localStorage.removeItem('avtotest_' + name); } catch (e) {}
     }
+}
+
+/** Save admin/superadmin to BOTH cookie and localStorage (2 months persistence) */
+function saveAdminToStorage(key, value) {
+    const expiresMs = 60 * 24 * 60 * 60 * 1000; // 2 months
+    const expiresAt = Date.now() + expiresMs;
+    const expiresDate = new Date(expiresAt);
+    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/; Expires=${expiresDate.toUTCString()}; SameSite=Lax; Max-Age=${Math.floor(expiresMs / 1000)}`;
+    try {
+        localStorage.setItem('avtotest_' + key, JSON.stringify({ value, expiresAt }));
+    } catch (e) { console.warn('localStorage set failed:', e); }
 }
 
 /** Save user data to BOTH cookie and localStorage. Forsale, permanent, completed = 2 months; temporary = 30 min */
@@ -132,7 +145,7 @@ if (loginForm && errorElement) {
             // Check for superadmin login first
             const isSuperAdminResult = await isSuperAdmin(email, password);
             if (isSuperAdminResult) {
-                setCookie('isSuperAdmin', 'true', 'permanent');
+                saveAdminToStorage('isSuperAdmin', 'true');
                 window.location.href = '/superadmin';
                 return;
             }
@@ -140,7 +153,7 @@ if (loginForm && errorElement) {
             // Check for admin login
             const isAdminResult = await isAdmin(email, password);
             if (isAdminResult) {
-                setCookie('isAdmin', 'true', 'permanent');
+                saveAdminToStorage('isAdmin', 'true');
                 window.location.href = '/admin';
                 return;
             }
