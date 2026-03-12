@@ -28,10 +28,13 @@ function getAdminSession(key) {
 function deleteCookie(name) {
   document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
   if (name === 'isAdmin') try { localStorage.removeItem('avtotest_isAdmin'); } catch (e) {}
+  if (name === 'isSuperAdmin') try { localStorage.removeItem('avtotest_isSuperAdmin'); } catch (e) {}
 }
 
-// 1. Admin check (cookie + localStorage)
-if (getAdminSession('isAdmin') !== 'true') {
+// 1. Admin check: allow isAdmin OR isSuperAdmin (superadmin can access admin)
+const isAdminSession = getAdminSession('isAdmin') === 'true';
+const isSuperAdminSession = getAdminSession('isSuperAdmin') === 'true';
+if (!isAdminSession && !isSuperAdminSession) {
   window.location.href = '/login';
 } else {
   // 2. Create new user
@@ -258,6 +261,7 @@ if (getAdminSession('isAdmin') !== 'true') {
     logoutBtn.addEventListener('click', async () => {
       if (window.auth) await auth.signOut();
       deleteCookie('isAdmin');
+      deleteCookie('isSuperAdmin'); // clear both (user may be superadmin)
       window.location.href = '/login';
     });
   }
