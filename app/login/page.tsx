@@ -117,7 +117,7 @@ export default function Login() {
                 </div>
             </div>
 
-            <Script src="/scripts/auth.js" strategy="lazyOnload" />
+            <Script src="/scripts/auth.js" strategy="afterInteractive" />
         </>
     );
 }

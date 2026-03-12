@@ -32,22 +32,37 @@ function clearAllUserData() {
   }
 }
 
-// 1. Check login state (cookie first, then localStorage for forsale/completed persistence)
+/** Sync user data to BOTH cookie and localStorage. Use originalExpiresAt to preserve login expiry when restoring. */
+function syncUserToStorage(userData, originalExpiresAt) {
+  if (!userData) return;
+  const status = userData.status || '';
+  const isTemporary = status.toLowerCase() === 'temporary';
+  const expiresAt = (originalExpiresAt && originalExpiresAt > Date.now())
+    ? originalExpiresAt
+    : Date.now() + (isTemporary ? 30 * 60 * 1000 : 60 * 24 * 60 * 60 * 1000);
+  const userJson = JSON.stringify(userData);
+
+  document.cookie = 'user=' + encodeURIComponent(userJson) +
+    '; Path=/; Expires=' + new Date(expiresAt).toUTCString() + '; SameSite=Lax; Max-Age=' + Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  try {
+    localStorage.setItem('avtotest_user', JSON.stringify({ data: userData, expiresAt: expiresAt }));
+  } catch (e) { console.warn('localStorage sync failed:', e); }
+}
+
+// 1. Check login state (cookie first, then localStorage - ALL statuses including forsale persist 2 months)
 let userData;
 try {
   const userCookie = getCookie('user');
   if (userCookie) {
     userData = JSON.parse(userCookie);
+    syncUserToStorage(userData); // sync to localStorage (no originalExpiresAt - use 2 months from now)
   } else {
-    // Cookie may be cleared on PC restart - try localStorage (saved at login for 2 months)
     const stored = localStorage.getItem('avtotest_user');
     if (stored) {
       const parsed = JSON.parse(stored);
       if (parsed.expiresAt && parsed.expiresAt > Date.now() && parsed.data) {
         userData = parsed.data;
-        // Restore cookie so next load works from cookie
-        document.cookie = 'user=' + encodeURIComponent(JSON.stringify(userData)) +
-          '; Path=/; Expires=' + new Date(parsed.expiresAt).toUTCString() + '; SameSite=Lax';
+        syncUserToStorage(userData, parsed.expiresAt); // preserve original expiry
       } else {
         localStorage.removeItem('avtotest_user');
       }
