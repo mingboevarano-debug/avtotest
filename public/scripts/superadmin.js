@@ -50,7 +50,17 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
       }
 
       try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        // Use a secondary Firebase app to avoid changing the primary auth state
+        const secondaryAppName = 'SuperAdminCreateUser';
+        let secondaryApp;
+        try {
+          secondaryApp = firebase.app(secondaryAppName);
+        } catch (e) {
+          secondaryApp = firebase.initializeApp(firebase.app().options, secondaryAppName);
+        }
+        const secondaryAuth = secondaryApp.auth();
+
+        const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
         const expiresAt = new Date();
         expiresAt.setMonth(expiresAt.getMonth() + 2);
 
@@ -65,7 +75,7 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
           isLoggedIn: false
         });
 
-        await auth.signOut();
+        try { await secondaryAuth.signOut(); } catch (e) {}
         alert(`For Sale user muvaffaqiyatli qo'shildi!`);
         userEmailInput.value = '';
         userPasswordInput.value = '';

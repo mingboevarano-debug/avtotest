@@ -134,10 +134,8 @@ if (!userData) {
         return;
       }
     } catch (err) {
-      console.error('[USER] Session check error:', err);
-      clearAllUserData();
-      window.location.href = '/login';
-      return;
+      // Network error on page load — don't kick user out, let periodic checks handle it
+      console.warn('[USER] Initial session check failed (network issue), continuing:', err);
     }
 
     // 2. Show user info
@@ -150,7 +148,6 @@ if (!userData) {
     if (userData.uid) {
     const userId = userData.uid;
 
-    // Wait for Firebase Realtime Database to be ready
     function setupUserPresence() {
       if (!window.realtimeDb || !window.firebase) {
         setTimeout(setupUserPresence, 500);
@@ -158,46 +155,59 @@ if (!userData) {
       }
 
       try {
-        // Mark user as active in Realtime Database
         const userStatusRef = window.realtimeDb.ref(`activeUsers/${userId}`);
-        const userStatusData = {
+        const makeStatusData = () => ({
           email: userData.email,
           uid: userId,
           online: true,
           lastSeen: firebase.database.ServerValue.TIMESTAMP,
           connectedAt: firebase.database.ServerValue.TIMESTAMP
-        };
-
-        userStatusRef.set(userStatusData).then(() => {
-          console.log('User marked as active:', userId, userStatusData);
-
-          // Keep connection alive by updating lastSeen every 30 seconds
-          const keepAliveInterval = setInterval(() => {
-            if (window.realtimeDb) {
-              userStatusRef.update({
-                lastSeen: firebase.database.ServerValue.TIMESTAMP
-              }).catch(err => {
-                console.error('Error updating lastSeen:', err);
-                clearInterval(keepAliveInterval);
-              });
-            } else {
-              clearInterval(keepAliveInterval);
-            }
-          }, 30000); // Update every 30 seconds
-
-          // Clear interval when page unloads
-          window.addEventListener('beforeunload', () => {
-            clearInterval(keepAliveInterval);
-          });
-        }).catch((error) => {
-          console.error('Error marking user as active:', error);
         });
 
-        // Set up disconnect handler
-        userStatusRef.onDisconnect().remove().then(() => {
-          console.log('Disconnect handler set up for user:', userId);
-        }).catch(err => {
-          console.error('Error setting up disconnect handler:', err);
+        // Use .info/connected for reliable presence across reconnections
+        const connectedRef = window.realtimeDb.ref('.info/connected');
+        connectedRef.on('value', (snap) => {
+          if (snap.val() === true) {
+            userStatusRef.onDisconnect().remove().then(() => {
+              userStatusRef.set(makeStatusData());
+            });
+          }
+        });
+
+        const keepAliveInterval = setInterval(() => {
+          if (window.realtimeDb) {
+            userStatusRef.update({
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            }).catch(() => {});
+          } else {
+            clearInterval(keepAliveInterval);
+          }
+        }, 30000);
+
+        // Re-establish presence when tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && window.realtimeDb) {
+            userStatusRef.update({
+              online: true,
+              lastSeen: firebase.database.ServerValue.TIMESTAMP
+            }).catch(() => {});
+          }
+        });
+
+        // Re-establish full presence when network comes back
+        window.addEventListener('online', () => {
+          if (window.realtimeDb) {
+            userStatusRef.set(makeStatusData()).then(() => {
+              userStatusRef.onDisconnect().remove();
+            }).catch(() => {});
+          }
+        });
+
+        window.addEventListener('beforeunload', () => {
+          clearInterval(keepAliveInterval);
+          if (window.db && userData.uid) {
+            try { db.collection('users').doc(userData.uid).update({ isLoggedIn: false }); } catch (e) {}
+          }
         });
 
         console.log('User presence tracking set up successfully');
@@ -257,7 +267,10 @@ if (!userData) {
 
     setupLogoutListener();
 
-    // 4. IMMEDIATE check on page load + periodic session check (one device only)
+    // 4. Periodic session & existence check with failure tolerance
+    let sessionCheckFailCount = 0;
+    const MAX_SESSION_FAILURES = 5;
+
     async function checkSessionStillValid() {
       if (!userData || !userData.uid || !userData.sessionId || !window.db) return true;
       try {
@@ -271,9 +284,12 @@ if (!userData) {
           window.location.href = '/login';
           return false;
         }
+        sessionCheckFailCount = 0;
         return true;
       } catch (e) {
-        return true;
+        sessionCheckFailCount++;
+        console.warn('[USER] Session check error (' + sessionCheckFailCount + '/' + MAX_SESSION_FAILURES + '):', e);
+        return sessionCheckFailCount < MAX_SESSION_FAILURES;
       }
     }
 
@@ -305,9 +321,10 @@ if (!userData) {
 
     const userExistenceCheck = setInterval(async function () {
       await checkUserExists();
-    }, 2000);
+    }, 30000);
 
     window.addEventListener('online', () => {
+      sessionCheckFailCount = 0;
       checkUserExists();
     });
   }

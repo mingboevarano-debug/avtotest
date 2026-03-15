@@ -169,12 +169,38 @@ if (loginForm && errorElement) {
                 throw new Error('Foydalanuvchi topilmadi yoki o\'chirilgan.');
             }
 
-            // One device only: check isLoggedIn in Firebase — if true, someone is already logged in
+            // One login = 1 device only
             const data = userDoc.data();
             if (data && data.isLoggedIn === true) {
-                await auth.signOut();
-                errorElement.textContent = 'Siz allaqachon boshqa qurilmada tizimga kirgansiz. Faqat bitta qurilmada kirish mumkin.';
-                return;
+                // Check if user is ACTUALLY online on another device via Realtime DB
+                let isActuallyOnline = false;
+                if (window.realtimeDb) {
+                    try {
+                        const activeSnapshot = await window.realtimeDb.ref(`activeUsers/${userId}`).once('value');
+                        const activeData = activeSnapshot.val();
+                        if (activeSnapshot.exists() && activeData && activeData.online === true) {
+                            // Verify lastSeen is within the last 2 minutes (not a stale entry)
+                            const lastSeen = activeData.lastSeen || 0;
+                            const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+                            isActuallyOnline = lastSeen > twoMinutesAgo;
+                        }
+                    } catch (e) {
+                        console.warn('Could not check active status:', e);
+                    }
+                }
+
+                if (isActuallyOnline) {
+                    // Genuinely active on another device — BLOCK login
+                    await auth.signOut();
+                    errorElement.textContent = 'Bu akkaunt boshqa qurilmada faol ishlatilmoqda. Faqat bitta qurilmada kirish mumkin.';
+                    return;
+                }
+
+                // User is NOT actually online — stale isLoggedIn from browser close.
+                // Clean up and allow login on this device.
+                if (window.realtimeDb) {
+                    try { await window.realtimeDb.ref(`activeUsers/${userId}`).remove(); } catch (e) {}
+                }
             }
 
             const sessionId = typeof crypto !== 'undefined' && crypto.randomUUID
