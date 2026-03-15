@@ -86,24 +86,84 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
     });
   }
 
-  // 3. Fetch and display for sale users with real-time active status
+  // 3. Real-time presence: subscribe to activeUsers (Realtime DB)
   const userList = document.getElementById('superUserList') || document.getElementById('userList');
   let activeUsersMap = {};
+  let realtimeErrorShown = false;
+  var presenceUnsubscribe = function () {};
 
-  function setupRealtimeListener() {
-    if (!window.realtimeDb) {
-      setTimeout(setupRealtimeListener, 500);
-      return;
+  function isUserOnline(uid) {
+    if (window.Presence && typeof window.Presence.isUserOnline === 'function') {
+      return window.Presence.isUserOnline(activeUsersMap[uid]);
     }
-
-    const activeUsersRef = window.realtimeDb.ref('activeUsers');
-    activeUsersRef.on('value', (snapshot) => {
-      activeUsersMap = snapshot.val() || {};
-      renderLoadedUsers();
-    });
+    var r = activeUsersMap[uid];
+    return r && r.online === true;
   }
 
-  setupRealtimeListener();
+  function showRealtimeError(msg) {
+    var banner = document.getElementById('realtimeDbErrorBanner');
+    if (banner) return;
+    banner = document.createElement('div');
+    banner.id = 'realtimeDbErrorBanner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#d32f2f;color:#fff;padding:12px 20px;z-index:9999;font-size:14px;text-align:center;';
+    banner.textContent = msg;
+    document.body.appendChild(banner);
+  }
+
+  function onPresenceUpdate(map) {
+    realtimeErrorShown = false;
+    activeUsersMap = map || {};
+    renderLoadedUsers();
+  }
+
+  function onPresenceError(err) {
+    if (!realtimeErrorShown) {
+      realtimeErrorShown = true;
+      showRealtimeError('Onlayn ro\'yxat ishlamayapti. Firebase Realtime Database qoidalarini tekshiring: legacy/FIREBASE_RULES_SETUP.md');
+    }
+  }
+
+  var presenceAttached = false;
+  function setupPresenceSubscription() {
+    if (presenceAttached) return;
+    function attach() {
+      if (presenceAttached) return;
+      if (window.Presence && typeof window.Presence.subscribeActiveUsers === 'function') {
+        presenceUnsubscribe = window.Presence.subscribeActiveUsers(onPresenceUpdate, onPresenceError) || function () {};
+        presenceAttached = true;
+        return;
+      }
+      if (!window.realtimeDb) return;
+      try {
+        presenceAttached = true;
+        window.realtimeDb.ref('activeUsers').on('value',
+          function (snapshot) {
+            onPresenceUpdate(snapshot.val() || {});
+          },
+          onPresenceError
+        );
+      } catch (err) {
+        presenceAttached = false;
+        setTimeout(setupPresenceSubscription, 500);
+      }
+    }
+    attach();
+    if (presenceAttached) return;
+    window.addEventListener('firebase-realtime-ready', function () {
+      if (!presenceAttached) setupPresenceSubscription();
+    }, { once: true });
+    var attempts = 0;
+    var id = setInterval(function () {
+      attempts++;
+      if (presenceAttached || attempts > 50) {
+        clearInterval(id);
+        return;
+      }
+      setupPresenceSubscription();
+    }, 300);
+  }
+
+  setupPresenceSubscription();
 
   const PAGE_SIZE = 15;
   let lastDoc = null;
@@ -126,7 +186,7 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
     allUsersList.id = 'allForSaleUsersList';
     userList.appendChild(allUsersList);
     loadedUsers.forEach(({ doc, user, userId }) => {
-      const isActive = activeUsersMap[userId] && activeUsersMap[userId].online === true;
+      const isActive = isUserOnline(userId);
       renderUser(doc, user, userId, isActive, activeUsersList, allUsersList);
     });
     const loadMoreBtn = document.createElement('button');

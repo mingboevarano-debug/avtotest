@@ -112,7 +112,7 @@ export default function SuperAdmin() {
                 </div>
             </div>
 
-            <Script src="/scripts/superadmin.js" strategy="lazyOnload" />
+            <Script src="/scripts/superadmin.js" strategy="afterInteractive" />
         </>
     );
 }

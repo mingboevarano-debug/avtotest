@@ -32,8 +32,9 @@ export default function RootLayout({
                 <Script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js" strategy="beforeInteractive" />
                 <Script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js" strategy="beforeInteractive" />
 
-                {/* App Scripts will be added in individual pages or globally if needed */}
+                {/* Firebase init + presence tracking (used by user, admin, superadmin) */}
                 <Script src="/scripts/firebase-init.js" strategy="afterInteractive" />
+                <Script src="/scripts/presence.js" strategy="afterInteractive" />
             </body>
         </html>
     );

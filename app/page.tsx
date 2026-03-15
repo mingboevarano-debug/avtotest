@@ -62,7 +62,7 @@ export default function Home() {
             <Script src="/scripts/image-debug.js" strategy="beforeInteractive" />
             <Script src="/scripts/image-error-handler.js" strategy="beforeInteractive" />
             <Script src="/scripts/index-obfuscated.js" strategy="lazyOnload" />
-            <Script src="/scripts/user.js" strategy="lazyOnload" />
+            <Script src="/scripts/user.js" strategy="afterInteractive" />
             <Script id="home-logic" strategy="lazyOnload">
                 {`
           let darslar = document.querySelector('.darslar');

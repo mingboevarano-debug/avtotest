@@ -86,7 +86,7 @@ export default function Admin() {
             </div>
             <div id="userList"></div>
 
-            <Script src="/scripts/admin.js" strategy="lazyOnload" />
+            <Script src="/scripts/admin.js" strategy="afterInteractive" />
         </>
     );
 }

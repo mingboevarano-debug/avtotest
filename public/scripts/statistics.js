@@ -55,27 +55,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Track active users in real-time and store historical data
+  // 3. Track active users in real-time (use Presence module when available)
   let activeUsersMap = {};
   let onlineUsersChart = null;
   let currentChartType = 'day';
-  
-  const activeUsersRef = window.realtimeDb.ref('activeUsers');
-  activeUsersRef.on('value', (snapshot) => {
-    activeUsersMap = snapshot.val() || {};
-    
-    // Record current online count with timestamp
-    const onlineCount = Object.keys(activeUsersMap).filter(uid => activeUsersMap[uid].online === true).length;
-    recordOnlineUsersCount(onlineCount);
-    
-    loadStatistics(); // Refresh statistics when active users change
-    loadCharts(currentChartType); // Refresh charts
-  }, (error) => {
-    console.error('Error listening to active users:', error);
-    if (error.code === 'PERMISSION_DENIED') {
-      alert('Firebase Realtime Database ruxsatlari sozlanmagan. Iltimos, Firebase Console\'da Realtime Database Rules ni yangilang.');
+
+  function isUserOnline(uid) {
+    if (window.Presence && typeof window.Presence.isUserOnline === 'function') {
+      return window.Presence.isUserOnline(activeUsersMap[uid]);
     }
-  });
+    var r = activeUsersMap[uid];
+    return r && r.online === true;
+  }
+
+  function subscribeActiveUsers() {
+    if (window.Presence && typeof window.Presence.subscribeActiveUsers === 'function') {
+      window.Presence.subscribeActiveUsers(
+        function (map) {
+          activeUsersMap = map;
+          const onlineCount = Object.keys(activeUsersMap).filter(function (uid) { return isUserOnline(uid); }).length;
+          recordOnlineUsersCount(onlineCount);
+          loadStatistics();
+          loadCharts(currentChartType);
+        },
+        function (error) {
+          if (error && error.code === 'PERMISSION_DENIED') {
+            alert('Firebase Realtime Database ruxsatlari sozlanmagan. Iltimos, Firebase Console\'da Realtime Database Rules ni yangilang.');
+          }
+        }
+      );
+      return;
+    }
+    if (!window.realtimeDb) {
+      setTimeout(subscribeActiveUsers, 300);
+      return;
+    }
+    window.realtimeDb.ref('activeUsers').on('value', function (snapshot) {
+      activeUsersMap = snapshot.val() || {};
+      const onlineCount = Object.keys(activeUsersMap).filter(function (uid) { return isUserOnline(uid); }).length;
+      recordOnlineUsersCount(onlineCount);
+      loadStatistics();
+      loadCharts(currentChartType);
+    }, function (error) {
+      if (error && error.code === 'PERMISSION_DENIED') {
+        alert('Firebase Realtime Database ruxsatlari sozlanmagan. Iltimos, Firebase Console\'da Realtime Database Rules ni yangilang.');
+      }
+    });
+  }
+  subscribeActiveUsers();
   
   // 4. Record online users count to historical data
   function recordOnlineUsersCount(count) {
@@ -315,8 +342,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const userId = doc.id;
         stats.total++;
 
-        // Check if user is online
-        const isOnline = activeUsersMap[userId] && activeUsersMap[userId].online === true;
+        // Check if user is online (uses lastSeen threshold when Presence module loaded)
+        const isOnline = isUserOnline(userId);
         if (isOnline) {
           stats.online++;
         } else {

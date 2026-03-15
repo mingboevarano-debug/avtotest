@@ -144,78 +144,24 @@ if (!userData) {
       userEmailElement.textContent = userData.email || 'Unknown';
     }
 
-    // 3. Set up WebSocket-like real-time connection for force logout
+    // 3. Real-time presence tracking (presence.js) + force logout listener
     if (userData.uid) {
     const userId = userData.uid;
+    var cancelPresence = function () {};
 
     function setupUserPresence() {
-      if (!window.realtimeDb || !window.firebase) {
-        setTimeout(setupUserPresence, 500);
-        return;
-      }
-
-      try {
-        const userStatusRef = window.realtimeDb.ref(`activeUsers/${userId}`);
-        const makeStatusData = () => ({
-          email: userData.email,
-          uid: userId,
-          online: true,
-          lastSeen: firebase.database.ServerValue.TIMESTAMP,
-          connectedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        // Use .info/connected for reliable presence across reconnections
-        const connectedRef = window.realtimeDb.ref('.info/connected');
-        connectedRef.on('value', (snap) => {
-          if (snap.val() === true) {
-            userStatusRef.onDisconnect().remove().then(() => {
-              userStatusRef.set(makeStatusData());
-            });
-          }
-        });
-
-        const keepAliveInterval = setInterval(() => {
-          if (window.realtimeDb) {
-            userStatusRef.update({
-              lastSeen: firebase.database.ServerValue.TIMESTAMP
-            }).catch(() => {});
-          } else {
-            clearInterval(keepAliveInterval);
-          }
-        }, 30000);
-
-        // Re-establish presence when tab becomes visible again
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && window.realtimeDb) {
-            userStatusRef.update({
-              online: true,
-              lastSeen: firebase.database.ServerValue.TIMESTAMP
-            }).catch(() => {});
-          }
-        });
-
-        // Re-establish full presence when network comes back
-        window.addEventListener('online', () => {
-          if (window.realtimeDb) {
-            userStatusRef.set(makeStatusData()).then(() => {
-              userStatusRef.onDisconnect().remove();
-            }).catch(() => {});
-          }
-        });
-
-        window.addEventListener('beforeunload', () => {
-          clearInterval(keepAliveInterval);
+      if (window.Presence && typeof window.Presence.startPresence === 'function') {
+        cancelPresence = window.Presence.startPresence(userId, userData.email);
+        window.addEventListener('beforeunload', function () {
+          cancelPresence();
           if (window.db && userData.uid) {
             try { db.collection('users').doc(userData.uid).update({ isLoggedIn: false }); } catch (e) {}
           }
         });
-
-        console.log('User presence tracking set up successfully');
-      } catch (error) {
-        console.error('Error setting up user presence:', error);
+        return;
       }
+      setTimeout(setupUserPresence, 400);
     }
-
     setupUserPresence();
 
     // Listen for force logout signals (e.g. login from another device or admin delete)
@@ -329,13 +275,14 @@ if (!userData) {
     });
   }
 
-  // 7. Logout — set isLoggedIn false in Firebase so next login is allowed
+  // 7. Logout — clear presence and set isLoggedIn false
   var logoutBtn = document.getElementById('logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () {
       if (userData && userData.uid) {
+        cancelPresence();
         if (window.realtimeDb) {
-          window.realtimeDb.ref('activeUsers/' + userData.uid).remove();
+          window.realtimeDb.ref('activeUsers/' + userData.uid).remove().catch(function () {});
         }
         if (window.db) {
           window.db.collection('users').doc(userData.uid).update({ isLoggedIn: false }).catch(function () {});

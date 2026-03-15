@@ -32,6 +32,7 @@ try {
     try {
       realtimeDb = firebase.database();
       window.realtimeDb = realtimeDb;
+      window.dispatchEvent(new Event('firebase-realtime-ready'));
       console.log("Firebase Realtime Database initialized (retry)");
     } catch (retryError) {
       console.error("Failed to initialize Realtime Database after retry:", retryError);
@@ -46,6 +47,11 @@ try {
 window.auth = auth;
 window.db = db;
 window.realtimeDb = realtimeDb;
+
+// Signal so presence and other scripts know Realtime DB is ready
+if (realtimeDb) {
+  window.dispatchEvent(new Event('firebase-realtime-ready'));
+}
 
 console.log("Firebase initialized", {
   auth: !!auth,
