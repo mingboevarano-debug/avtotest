@@ -145,6 +145,8 @@ if (loginForm && errorElement) {
             // Check for superadmin login first
             const isSuperAdminResult = await isSuperAdmin(email, password);
             if (isSuperAdminResult) {
+                deleteCookie('isAdmin');
+                try { localStorage.removeItem('avtotest_isAdmin'); } catch (e) {}
                 saveAdminToStorage('isSuperAdmin', 'true');
                 window.location.href = '/superadmin';
                 return;
@@ -153,6 +155,8 @@ if (loginForm && errorElement) {
             // Check for admin login
             const isAdminResult = await isAdmin(email, password);
             if (isAdminResult) {
+                deleteCookie('isSuperAdmin');
+                try { localStorage.removeItem('avtotest_isSuperAdmin'); } catch (e) {}
                 saveAdminToStorage('isAdmin', 'true');
                 window.location.href = '/admin';
                 return;

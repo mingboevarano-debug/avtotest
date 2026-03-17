@@ -31,11 +31,13 @@ function deleteCookie(name) {
   if (name === 'isSuperAdmin') try { localStorage.removeItem('avtotest_isSuperAdmin'); } catch (e) {}
 }
 
-// 1. Admin check: allow isAdmin OR isSuperAdmin (superadmin can access admin)
+// 1. Admin check: superadmin must use /superadmin; regular admin uses /admin
 const isAdminSession = getAdminSession('isAdmin') === 'true';
 const isSuperAdminSession = getAdminSession('isSuperAdmin') === 'true';
 if (!isAdminSession && !isSuperAdminSession) {
   window.location.href = '/login';
+} else if (isSuperAdminSession) {
+  window.location.href = '/superadmin';
 } else {
   // 2. Create new user
   const createUserBtn = document.getElementById('createUser');
@@ -126,8 +128,8 @@ if (!isAdminSession && !isSuperAdminSession) {
     });
   }
 
-  // 3. Real-time presence: subscribe to activeUsers (Realtime DB) so online list updates live
-  const userList = document.getElementById('userList');
+  // 3. Real-time presence + user list
+  var userList = document.getElementById('userList');
   let activeUsersMap = {};
   let realtimeErrorShown = false;
   var presenceUnsubscribe = function () {};
@@ -266,7 +268,8 @@ if (!isAdminSession && !isSuperAdminSession) {
   }
 
   async function fetchUsers(reset = true) {
-    if (!userList || !window.db) return;
+    userList = document.getElementById('userList');
+    if (!userList || !window.db) return false;
     try {
       if (reset) {
         lastDoc = null;
@@ -289,10 +292,33 @@ if (!isAdminSession && !isSuperAdminSession) {
       }
 
       renderLoadedUsers();
+      return true;
     } catch (error) {
       console.error('Error fetching users:', error);
+      return false;
     }
   }
+
+  function runInitialFetch() {
+    function tryFetch() {
+      userList = document.getElementById('userList');
+      if (userList && window.db) {
+        fetchUsers();
+        return true;
+      }
+      return false;
+    }
+    if (tryFetch()) return;
+    window.addEventListener('firebase-realtime-ready', tryFetch, { once: true });
+    if (window.db) window.addEventListener('load', tryFetch, { once: true });
+    var attempts = 0;
+    var id = setInterval(function () {
+      attempts++;
+      if (tryFetch() || attempts > 60) clearInterval(id);
+    }, 250);
+  }
+
+  runInitialFetch();
 
   window.deleteUser = async (userId, isActive = false) => {
     if (window.confirm('Ishonchingiz komilmi?')) {
@@ -336,5 +362,4 @@ if (!isAdminSession && !isSuperAdminSession) {
     } catch (e) { }
   }
 
-  fetchUsers();
 }

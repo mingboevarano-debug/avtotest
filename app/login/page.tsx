@@ -118,6 +118,16 @@ export default function Login() {
             </div>
 
             <Script src="/scripts/auth.js" strategy="afterInteractive" />
+            <Script id="login-redirect" strategy="afterInteractive">
+                {`(function(){
+                  function getCookie(n){var v=('; '+document.cookie).split('; '+n+'=');return v.length===2?decodeURIComponent(v.pop().split(';').shift()):null;}
+                  function getStored(k){try{var s=localStorage.getItem('avtotest_'+k);if(s){var p=JSON.parse(s);if(p.expiresAt>Date.now())return p.value;}localStorage.removeItem('avtotest_'+k);}catch(e){}return null;}
+                  function hasSuperAdmin(){return getCookie('isSuperAdmin')==='true'||getStored('isSuperAdmin')==='true';}
+                  function hasAdmin(){return getCookie('isAdmin')==='true'||getStored('isAdmin')==='true';}
+                  if(hasSuperAdmin()){window.location.href='/superadmin';return;}
+                  if(hasAdmin()){window.location.href='/admin';}
+                })();`}
+            </Script>
         </>
     );
 }

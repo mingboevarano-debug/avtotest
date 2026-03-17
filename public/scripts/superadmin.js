@@ -30,10 +30,21 @@ function deleteCookie(name) {
   if (name === 'isSuperAdmin') try { localStorage.removeItem('avtotest_isSuperAdmin'); } catch (e) {}
 }
 
-// 1. Superadmin check (cookie + localStorage)
-if (getAdminSession('isSuperAdmin') !== 'true') {
-  window.location.href = '/login';
-} else {
+// 1. Superadmin check (cookie + localStorage) - retry on refresh to avoid timing issues
+function checkSuperAdminAndRun() {
+  if (getAdminSession('isSuperAdmin') === 'true') {
+    runSuperAdmin();
+    return;
+  }
+  setTimeout(function () {
+    if (getAdminSession('isSuperAdmin') === 'true') {
+      runSuperAdmin();
+      return;
+    }
+    window.location.href = '/login';
+  }, 150);
+}
+function runSuperAdmin() {
   // 2. Create new for sale user
   const createUserBtn = document.getElementById('createForSaleUser');
   const userEmailInput = document.getElementById('userEmail');
@@ -86,8 +97,8 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
     });
   }
 
-  // 3. Real-time presence: subscribe to activeUsers (Realtime DB)
-  const userList = document.getElementById('superUserList') || document.getElementById('userList');
+  // 3. Real-time presence + user list
+  var userList = document.getElementById('superUserList') || document.getElementById('userList');
   let activeUsersMap = {};
   let realtimeErrorShown = false;
   var presenceUnsubscribe = function () {};
@@ -224,7 +235,8 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
   }
 
   async function fetchUsers(reset = true) {
-    if (!userList || !window.db) return;
+    userList = document.getElementById('superUserList') || document.getElementById('userList');
+    if (!userList || !window.db) return false;
     try {
       if (reset) {
         loadedUsers = [];
@@ -246,12 +258,35 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
         loadedUsers = list;
       }
 
-      hasMorePages = false; // we load all forsale users in one go
+      hasMorePages = false;
       renderLoadedUsers();
+      return true;
     } catch (error) {
       console.error('Error fetching users:', error);
+      return false;
     }
   }
+
+  function runInitialFetch() {
+    function tryFetch() {
+      userList = document.getElementById('superUserList') || document.getElementById('userList');
+      if (userList && window.db) {
+        fetchUsers();
+        return true;
+      }
+      return false;
+    }
+    if (tryFetch()) return;
+    window.addEventListener('firebase-realtime-ready', tryFetch, { once: true });
+    window.addEventListener('load', tryFetch, { once: true });
+    var attempts = 0;
+    var id = setInterval(function () {
+      attempts++;
+      if (tryFetch() || attempts > 60) clearInterval(id);
+    }, 250);
+  }
+
+  runInitialFetch();
 
   window.deleteUser = async (userId, isActive = false) => {
     if (window.confirm('Ishonchingiz komilmi?')) {
@@ -279,7 +314,6 @@ if (getAdminSession('isSuperAdmin') !== 'true') {
       window.location.href = '/login';
     });
   }
-
-  fetchUsers();
 }
+checkSuperAdminAndRun();
 
