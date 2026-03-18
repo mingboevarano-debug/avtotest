@@ -7,21 +7,25 @@ function getCookie(name) {
 }
 
 function getAdminSession(key) {
-  let val = getCookie(key);
+  var val = getCookie(key);
   if (val) return val;
-  try {
-    const stored = localStorage.getItem('avtotest_' + key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
+  var stored = null;
+  try { stored = localStorage.getItem('avtotest_' + key); } catch (e) {}
+  if (!stored) {
+    try { stored = sessionStorage.getItem('avtotest_' + key); } catch (e) {}
+  }
+  if (stored) {
+    try {
+      var parsed = JSON.parse(stored);
       if (parsed.expiresAt > Date.now()) {
         val = parsed.value;
-        const expiresMs = 60 * 24 * 60 * 60 * 1000;
-        document.cookie = key + '=' + encodeURIComponent(val) + '; Path=/; Expires=' + new Date(Date.now() + expiresMs).toUTCString() + '; SameSite=Lax';
+        try { document.cookie = key + '=' + encodeURIComponent(val) + '; Path=/; Expires=' + new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toUTCString(); } catch (e) {}
         return val;
       }
-      localStorage.removeItem('avtotest_' + key);
-    }
-  } catch (e) {}
+    } catch (e) {}
+    try { localStorage.removeItem('avtotest_' + key); } catch (e) {}
+    try { sessionStorage.removeItem('avtotest_' + key); } catch (e) {}
+  }
   return null;
 }
 

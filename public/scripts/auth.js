@@ -44,32 +44,36 @@ function deleteCookie(name) {
 
 /** Save admin/superadmin to BOTH cookie and localStorage (2 months persistence) */
 function saveAdminToStorage(key, value) {
-    const expiresMs = 60 * 24 * 60 * 60 * 1000; // 2 months
-    const expiresAt = Date.now() + expiresMs;
-    const expiresDate = new Date(expiresAt);
-    document.cookie = `${key}=${encodeURIComponent(value)}; Path=/; Expires=${expiresDate.toUTCString()}; SameSite=Lax; Max-Age=${Math.floor(expiresMs / 1000)}`;
+    var expiresMs = 60 * 24 * 60 * 60 * 1000;
+    var expiresAt = Date.now() + expiresMs;
     try {
-        localStorage.setItem('avtotest_' + key, JSON.stringify({ value, expiresAt }));
+        document.cookie = key + '=' + encodeURIComponent(value) + '; Path=/; Expires=' + new Date(expiresAt).toUTCString();
+    } catch (e) { console.warn('Cookie set failed:', e); }
+    try {
+        localStorage.setItem('avtotest_' + key, JSON.stringify({ value: value, expiresAt: expiresAt }));
     } catch (e) { console.warn('localStorage set failed:', e); }
+    try {
+        sessionStorage.setItem('avtotest_' + key, JSON.stringify({ value: value, expiresAt: expiresAt }));
+    } catch (e) {}
 }
 
 /** Save user data to BOTH cookie and localStorage. Forsale, permanent, completed = 2 months; temporary = 30 min */
 function saveUserToStorage(userData, status) {
     if (!userData) return;
-    const statusLower = (status || (userData.status || '')).toLowerCase();
-    const isTemporary = statusLower === 'temporary';
-    const expiresMs = isTemporary
+    var statusLower = (status || (userData.status || '')).toLowerCase();
+    var isTemporary = statusLower === 'temporary';
+    var expiresMs = isTemporary
         ? 30 * 60 * 1000
-        : 60 * 24 * 60 * 60 * 1000; // 2 months for forsale, permanent, completed
-    const expiresAt = Date.now() + expiresMs;
-    const userJson = JSON.stringify(userData);
+        : 60 * 24 * 60 * 60 * 1000;
+    var expiresAt = Date.now() + expiresMs;
+    var userJson = JSON.stringify(userData);
 
-    // 1. Save to cookie
-    const expiresDate = new Date(expiresAt);
-    const cookieStr = `user=${encodeURIComponent(userJson)}; Path=/; Expires=${expiresDate.toUTCString()}; SameSite=Lax; Max-Age=${Math.floor(expiresMs / 1000)}`;
-    document.cookie = cookieStr;
+    try {
+        document.cookie = 'user=' + encodeURIComponent(userJson) + '; Path=/; Expires=' + new Date(expiresAt).toUTCString();
+    } catch (e) {
+        console.warn('Cookie set failed:', e);
+    }
 
-    // 2. Save to localStorage (backup - survives PC restart when cookies may be cleared)
     try {
         localStorage.setItem('avtotest_user', JSON.stringify({
             data: userData,
@@ -78,6 +82,13 @@ function saveUserToStorage(userData, status) {
     } catch (e) {
         console.warn('localStorage set failed:', e);
     }
+
+    try {
+        sessionStorage.setItem('avtotest_user', JSON.stringify({
+            data: userData,
+            expiresAt: expiresAt
+        }));
+    } catch (e) {}
 }
 
 // Admin check (move to server-side in production)

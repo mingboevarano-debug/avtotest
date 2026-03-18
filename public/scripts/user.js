@@ -32,39 +32,46 @@ function clearAllUserData() {
   }
 }
 
-/** Sync user data to BOTH cookie and localStorage. Use originalExpiresAt to preserve login expiry when restoring. */
+/** Sync user data to cookie + localStorage + sessionStorage. */
 function syncUserToStorage(userData, originalExpiresAt) {
   if (!userData) return;
-  const status = userData.status || '';
-  const isTemporary = status.toLowerCase() === 'temporary';
-  const expiresAt = (originalExpiresAt && originalExpiresAt > Date.now())
+  var status = userData.status || '';
+  var isTemporary = status.toLowerCase() === 'temporary';
+  var expiresAt = (originalExpiresAt && originalExpiresAt > Date.now())
     ? originalExpiresAt
     : Date.now() + (isTemporary ? 30 * 60 * 1000 : 60 * 24 * 60 * 60 * 1000);
-  const userJson = JSON.stringify(userData);
+  var userJson = JSON.stringify(userData);
+  var storageObj = JSON.stringify({ data: userData, expiresAt: expiresAt });
 
-  document.cookie = 'user=' + encodeURIComponent(userJson) +
-    '; Path=/; Expires=' + new Date(expiresAt).toUTCString() + '; SameSite=Lax; Max-Age=' + Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
   try {
-    localStorage.setItem('avtotest_user', JSON.stringify({ data: userData, expiresAt: expiresAt }));
-  } catch (e) { console.warn('localStorage sync failed:', e); }
+    document.cookie = 'user=' + encodeURIComponent(userJson) + '; Path=/; Expires=' + new Date(expiresAt).toUTCString();
+  } catch (e) {}
+  try { localStorage.setItem('avtotest_user', storageObj); } catch (e) {}
+  try { sessionStorage.setItem('avtotest_user', storageObj); } catch (e) {}
 }
 
-// 1. Check login state (cookie first, then localStorage - ALL statuses including forsale persist 2 months)
-let userData;
+// 1. Restore login state: cookie → localStorage → sessionStorage (triple fallback for old browsers)
+var userData;
 try {
-  const userCookie = getCookie('user');
+  var userCookie = getCookie('user');
   if (userCookie) {
     userData = JSON.parse(userCookie);
-    syncUserToStorage(userData); // sync to localStorage (no originalExpiresAt - use 2 months from now)
-  } else {
-    const stored = localStorage.getItem('avtotest_user');
+    syncUserToStorage(userData);
+  }
+  if (!userData) {
+    var stored = null;
+    try { stored = localStorage.getItem('avtotest_user'); } catch (e) {}
+    if (!stored) {
+      try { stored = sessionStorage.getItem('avtotest_user'); } catch (e) {}
+    }
     if (stored) {
-      const parsed = JSON.parse(stored);
+      var parsed = JSON.parse(stored);
       if (parsed.expiresAt && parsed.expiresAt > Date.now() && parsed.data) {
         userData = parsed.data;
-        syncUserToStorage(userData, parsed.expiresAt); // preserve original expiry
+        syncUserToStorage(userData, parsed.expiresAt);
       } else {
-        localStorage.removeItem('avtotest_user');
+        try { localStorage.removeItem('avtotest_user'); } catch (e) {}
+        try { sessionStorage.removeItem('avtotest_user'); } catch (e) {}
       }
     }
   }
@@ -108,34 +115,51 @@ if (!userData) {
   // return; // We can't return from top-level, but the redirect will happen
 } else {
   (async function initUserPage() {
-    // One device only: require sessionId (set at login)
     if (!userData.sessionId) {
       clearAllUserData();
       window.location.href = '/login';
       return;
     }
-    for (var i = 0; i < 50; i++) {
+
+    // Wait for Firebase services (up to 10s — slow on old devices)
+    for (var i = 0; i < 100; i++) {
       if (window.db) break;
       await new Promise(function (r) { setTimeout(r, 100); });
     }
     if (!window.db) {
-      clearAllUserData();
-      window.location.href = '/login';
-      return;
+      console.warn('[USER] Firebase Firestore not available after 10s, showing page anyway');
     }
-    try {
-      var doc = await db.collection('users').doc(userData.uid).get();
-      var data = doc.exists ? doc.data() : null;
-      var currentSessionId = data && data.currentSessionId;
-      if (currentSessionId !== userData.sessionId) {
-        clearAllUserData();
-        if (window.auth) await window.auth.signOut();
-        window.location.href = '/login';
-        return;
+
+    // Wait for Firebase Auth to restore the signed-in user (critical on old browsers)
+    if (window.auth) {
+      try {
+        await new Promise(function (resolve) {
+          var done = false;
+          var unsub = window.auth.onAuthStateChanged(function () {
+            if (!done) { done = true; if (unsub) unsub(); resolve(); }
+          });
+          setTimeout(function () {
+            if (!done) { done = true; if (unsub) unsub(); resolve(); }
+          }, 5000);
+        });
+      } catch (e) {}
+    }
+
+    // Initial session validation — only redirect on confirmed mismatch, not on errors
+    if (window.db) {
+      try {
+        var doc = await db.collection('users').doc(userData.uid).get();
+        var data = doc.exists ? doc.data() : null;
+        var currentSessionId = data && data.currentSessionId;
+        if (currentSessionId !== userData.sessionId) {
+          clearAllUserData();
+          if (window.auth) await window.auth.signOut();
+          window.location.href = '/login';
+          return;
+        }
+      } catch (err) {
+        console.warn('[USER] Initial session check failed, continuing:', err);
       }
-    } catch (err) {
-      // Network error on page load — don't kick user out, let periodic checks handle it
-      console.warn('[USER] Initial session check failed (network issue), continuing:', err);
     }
 
     // 2. Show user info
@@ -213,9 +237,9 @@ if (!userData) {
 
     setupLogoutListener();
 
-    // 4. Periodic session & existence check with failure tolerance
-    let sessionCheckFailCount = 0;
-    const MAX_SESSION_FAILURES = 5;
+    // 4. Periodic session & existence check — generous failure tolerance for slow/old devices
+    var sessionCheckFailCount = 0;
+    var MAX_SESSION_FAILURES = 15;
 
     async function checkSessionStillValid() {
       if (!userData || !userData.uid || !userData.sessionId || !window.db) return true;
