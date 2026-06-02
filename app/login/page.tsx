@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-
+import logo from "../photo_2026-06-02_18-55-22.jpg"
 export default function Login() {
     const css = `
     .login-page {
@@ -101,7 +101,7 @@ export default function Login() {
             <div className="login-page">
                 <div className="login-card">
                     <div className="login-header">
-                        <img className="login-logo" src="https://res.cloudinary.com/da51nlisj/image/upload/v1770655033/logo_e9wnfh.png" alt="Prava Izlab" />
+                        <img className="login-logo" src="https://cdn.corenexis.com/files/c/1472925720.jpg" alt="Prava Izlab" />
                         <span className="login-brand">Prava Izlab</span>
                     </div>
 
