@@ -101,7 +101,7 @@ export default function Login() {
             <div className="login-page">
                 <div className="login-card">
                     <div className="login-header">
-                        <img className="login-logo" src="https://cdn.corenexis.com/files/c/1472925720.jpg" alt="Prava Izlab" />
+                        <img className="login-logo" src="https://res.cloudinary.com/dodw9wq5x/image/upload/v1784272271/photo_2026-02-09_19-54-41_fyc7zm.jpg" alt="Prava Izlab" />
                         <span className="login-brand">Prava Izlab</span>
                     </div>
 

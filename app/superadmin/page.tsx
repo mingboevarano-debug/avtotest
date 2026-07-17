@@ -107,6 +107,12 @@ export default function SuperAdmin() {
 
             <div className="user-list-container">
                 <h2>Barcha Foydalanuvchilar va Ularning Statusi</h2>
+                <div className="user-stats" id="userStats" style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 'bold', color: '#1976d2' }}>
+                    {/* Stats will be populated here */}
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                    <input type="text" id="searchUserInput" placeholder="Foydalanuvchi qidirish (Email)" style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '15px', boxSizing: 'border-box' }} />
+                </div>
                 <div id="superUserList">
                     {/* User list will be populated here */}
                 </div>

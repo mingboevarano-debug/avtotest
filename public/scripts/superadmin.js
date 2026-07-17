@@ -184,6 +184,15 @@ function runSuperAdmin() {
   let lastDoc = null;
   let loadedUsers = [];
   let hasMorePages = true;
+  let searchTerm = '';
+
+  const searchInput = document.getElementById('searchUserInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      renderLoadedUsers();
+    });
+  }
 
   function renderLoadedUsers() {
     if (!userList) return;
@@ -200,10 +209,29 @@ function runSuperAdmin() {
     const allUsersList = document.createElement('div');
     allUsersList.id = 'allForSaleUsersList';
     userList.appendChild(allUsersList);
+    let totalOnline = 0;
+    let totalDisplayed = 0;
+
     loadedUsers.forEach(({ doc, user, userId }) => {
+      if (searchTerm) {
+        const email = user.email || '';
+        if (!email.toLowerCase().includes(searchTerm.toLowerCase())) {
+          return;
+        }
+      }
+
       const isActive = isUserOnline(userId);
+      if (isActive) totalOnline++;
+      totalDisplayed++;
+      
       renderUser(doc, user, userId, isActive, activeUsersList, allUsersList);
     });
+
+    const statsContainer = document.getElementById('userStats');
+    if (statsContainer) {
+      statsContainer.innerHTML = `Ko'rsatilmoqda: ${totalDisplayed} ta | Onlayn: ${totalOnline} ta | Jami yuklangan: ${loadedUsers.length} ta`;
+    }
+
     const loadMoreBtn = document.createElement('button');
     loadMoreBtn.id = 'loadMoreForSaleUsers';
     loadMoreBtn.textContent = '+';
